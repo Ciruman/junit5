@@ -67,4 +67,16 @@ public @interface CsvSource {
 	@API(status = EXPERIMENTAL, since = "5.5")
 	String emptyValue() default "";
 
+    /**
+     * TODO!!!
+     * The null symbol to use when reading the {@linkplain #value lines}.
+     *
+     * <p>This value replaces quoted empty strings read from the input.
+     *
+     * <p>Defaults to {@code ""}.
+     *
+     * @since 5.5
+     */
+    @API(status = EXPERIMENTAL, since = "5.5")
+    String nullSymbols() default "";
 }

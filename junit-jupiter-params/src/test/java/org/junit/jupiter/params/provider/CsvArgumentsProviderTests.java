@@ -27,35 +27,35 @@ class CsvArgumentsProviderTests {
 
 	@Test
 	void providesSingleArgument() {
-		Stream<Object[]> arguments = provideArguments(',', "", "foo");
+		Stream<Object[]> arguments = provideArguments(',', "", null, "foo");
 
 		assertThat(arguments).containsExactly(new String[] { "foo" });
 	}
 
 	@Test
 	void providesMultipleArguments() {
-		Stream<Object[]> arguments = provideArguments(',', "", "foo", "bar");
+		Stream<Object[]> arguments = provideArguments(',', "", null, "foo", "bar");
 
 		assertThat(arguments).containsExactly(new String[] { "foo" }, new String[] { "bar" });
 	}
 
 	@Test
 	void splitsAndTrimsArguments() {
-		Stream<Object[]> arguments = provideArguments('|', "", " foo | bar ");
+		Stream<Object[]> arguments = provideArguments('|', "", null, " foo | bar ");
 
 		assertThat(arguments).containsExactly(new String[] { "foo", "bar" });
 	}
 
 	@Test
 	void understandsQuotes() {
-		Stream<Object[]> arguments = provideArguments(',', "", "'foo, bar'");
+		Stream<Object[]> arguments = provideArguments(',', "", null, "'foo, bar'");
 
 		assertThat(arguments).containsExactly(new String[] { "foo, bar" });
 	}
 
 	@Test
 	void understandsEscapeCharacters() {
-		Stream<Object[]> arguments = provideArguments(',', "", "'foo or ''bar''', baz");
+		Stream<Object[]> arguments = provideArguments(',', "", null, "'foo or ''bar''', baz");
 
 		assertThat(arguments).containsExactly(new String[] { "foo or 'bar'", "baz" });
 	}
@@ -63,51 +63,59 @@ class CsvArgumentsProviderTests {
 	@Test
 	void throwsExceptionOnInvalidCsv() {
 		JUnitException exception = assertThrows(JUnitException.class,
-			() -> provideArguments(',', "", "foo", "bar", "").toArray());
+			() -> provideArguments(',', "", null, "foo", "bar", "").toArray());
 
 		assertThat(exception).hasMessage("Line at index 2 contains invalid CSV: \"\"");
 	}
 
 	@Test
 	void emptyValueIsAnEmptyString() {
-		Stream<Object[]> arguments = provideArguments(',', "", "null , , empty , ''");
+		Stream<Object[]> arguments = provideArguments(',', "", null, "null , , empty , ''");
 
 		assertThat(arguments).containsExactly(new String[] { "null", null, "empty", "" });
 	}
 
 	@Test
 	void emptyValueIsAnEmptyWithCustomEmptyValueString() {
-		Stream<Object[]> arguments = provideArguments(',', "vacio", "null , , empty , ''");
+		Stream<Object[]> arguments = provideArguments(',', "vacio", null, "null , , empty , ''");
 
 		assertThat(arguments).containsExactly(new String[] { "null", null, "empty", "vacio" });
 	}
 
+    @Test
+    void customNullSymbolsString() {
+        Stream<Object[]> arguments = provideArguments(',', "", "?", "? , , empty , ''");
+
+        assertThat(arguments).containsExactly(new String[] { null, null, "empty", "" });
+    }
+
 	@Test
 	void leadingSpacesAreTrimmed() {
-		Stream<Object[]> arguments = provideArguments(',', "", "'', 1", " '', 2", "'' , 3", " '' , 4");
+		Stream<Object[]> arguments = provideArguments(',', "", null, "'', 1", " '', 2", "'' , 3", " '' , 4");
 
 		assertThat(arguments).containsExactly(new Object[][] { { "", "1" }, { "", "2" }, { "", "3" }, { "", "4" } });
 	}
 
 	@Test
 	void trailingSpacesAreTrimmed() {
-		Stream<Object[]> arguments = provideArguments(',', "", "1,''", "2, ''", "3,'' ", "4, '' ");
+		Stream<Object[]> arguments = provideArguments(',', "", null, "1,''", "2, ''", "3,'' ", "4, '' ");
 
 		assertThat(arguments).containsExactly(new Object[][] { { "1", "" }, { "2", "" }, { "3", "" }, { "4", "" } });
 	}
 
 	@Test
 	void convertsEmptyValuesToNullInLinesAfterFirst() {
-		Stream<Object[]> arguments = provideArguments(',', "", "'', ''", " , ");
+		Stream<Object[]> arguments = provideArguments(',', "", null, "'', ''", " , ");
 
 		assertThat(arguments).containsExactly(new Object[][] { { "", "" }, { null, null } });
 	}
 
-	private Stream<Object[]> provideArguments(char delimiter, String emptyValue, String... value) {
+	private Stream<Object[]> provideArguments(char delimiter, String emptyValue, String nullSymbols, String... value) {
 		CsvSource annotation = mock(CsvSource.class);
 		when(annotation.value()).thenReturn(value);
 		when(annotation.delimiter()).thenReturn(delimiter);
 		when(annotation.emptyValue()).thenReturn(emptyValue);
+		when(annotation.nullSymbols()).thenReturn(nullSymbols);
 
 		CsvArgumentsProvider provider = new CsvArgumentsProvider();
 		provider.accept(annotation);
